@@ -19,7 +19,10 @@ import {
   CoreStart,
   Plugin,
   Logger,
+  IClusterClient,
 } from '../../../src/core/server';
+
+import reportsSchedulerPlugin from './backend/opendistro-reports-scheduler-plugin';
 
 import {
   OpendistroKibanaReportsPluginSetup,
@@ -29,6 +32,7 @@ import registerRoutes from './routes';
 
 export interface ReportsPluginRequestContext {
   logger: Logger;
+  esClient: IClusterClient;
 }
 //@ts-ignore
 declare module 'kibana/server' {
@@ -53,10 +57,14 @@ export class OpendistroKibanaReportsPlugin
     this.logger.debug('opendistro_kibana_reports: Setup');
     const router = core.http.createRouter();
 
-    // TODO: create Elasticsearch client that aware of reporting-scheduler API endpoints
-    // const esDriver: IClusterClient = core.elasticsearch.legacy.createClient("reporting-scheduler", {
-    //   plugins: [reportingSchedulerPlugin],
-    // });
+    // TODO: create Elasticsearch client that aware of reports-scheduler API endpoints
+    // Deprecated API. Switch to the new elasticsearch client as soon as https://github.com/elastic/kibana/issues/35508 done.
+    const esClient: IClusterClient = core.elasticsearch.createClient(
+      'reports_scheduler',
+      {
+        plugins: [reportsSchedulerPlugin],
+      }
+    );
 
     // Register server side APIs
     registerRoutes(router);
@@ -68,6 +76,7 @@ export class OpendistroKibanaReportsPlugin
       (context, request) => {
         return {
           logger: this.logger,
+          esClient,
         };
       }
     );

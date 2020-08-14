@@ -37,6 +37,7 @@ export const scheduleSchema = schema.object({
     schema.literal('Cron Based'),
   ]),
   schedule: schema.any(),
+  enabled_time: schema.number(),
 });
 
 export const intervalSchema = schema.object({
