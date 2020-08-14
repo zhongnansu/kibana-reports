@@ -315,7 +315,6 @@ export default function (router: IRouter) {
 
 function validateReportDefinition(reportDefinition: any) {
   reportSchema.validate(reportDefinition);
-
   const delivery = reportDefinition.delivery;
   const trigger = reportDefinition.trigger;
   const deliveryParams = delivery.delivery_params;
@@ -333,6 +332,7 @@ function validateReportDefinition(reportDefinition: any) {
     case DELIVERY_CHANNEL.kibana:
       break;
   }
+
   // TODO: add alert
   if (trigger.trigger_type === 'Schedule') {
     scheduleSchema.validate(triggerParams);
