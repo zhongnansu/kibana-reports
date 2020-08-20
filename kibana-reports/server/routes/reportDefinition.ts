@@ -77,7 +77,10 @@ export default function (router: IRouter) {
           index: 'report_definition',
           body: definition,
         };
+<<<<<<< HEAD:kibana-reports/server/routes/reportDefinition.ts
 
+=======
+>>>>>>> upstream/dev:server/routes/reportDefinition.ts
         const esResp = await context.core.elasticsearch.adminClient.callAsInternalUser(
           'index',
           params
