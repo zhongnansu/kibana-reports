@@ -77,10 +77,7 @@ export default function (router: IRouter) {
           index: 'report_definition',
           body: definition,
         };
-<<<<<<< HEAD:kibana-reports/server/routes/reportDefinition.ts
 
-=======
->>>>>>> upstream/dev:server/routes/reportDefinition.ts
         const esResp = await context.core.elasticsearch.adminClient.callAsInternalUser(
           'index',
           params
@@ -96,14 +93,17 @@ export default function (router: IRouter) {
         );
         // @ts-ignore
         const client = context.reporting_plugin.esClient.asScoped(request);
-
-        await client.callAsInternalUser('reports_scheduler.createSchedule', {
-          jobId: reportDefinitionId,
-          body: scheduledJob,
-        });
+        // create schedule in reports-scheduler
+        const res = await client.callAsInternalUser(
+          'reports_scheduler.createSchedule',
+          {
+            jobId: reportDefinitionId,
+            body: scheduledJob,
+          }
+        );
 
         return response.ok({
-          body: reportDefinitionId,
+          body: res,
         });
       } catch (error) {
         //@ts-ignore

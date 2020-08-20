@@ -46,7 +46,7 @@ export default function (router: IRouter) {
       } catch (error) {
         return response.badRequest({ body: error });
       }
-
+      // generate report
       try {
         let report = request.body;
         const reportParams = report.report_params;
@@ -58,13 +58,7 @@ export default function (router: IRouter) {
             reportParams.window_width,
             reportParams.window_height
           );
-          /**
-           * TODO: temporary, need to change after we figure out the correct date modeling
-           * https://github.com/elastic/kibana/blob/master/src/core/MIGRATION.md#use-scoped-services
-           * from the migration plan of kibana new platform, the usage says to get access to Elasticsearch data by
-           * await context.core.elasticsearch.adminClient.callAsInternalUser('ping');
-           * However, that doesn't work for now
-           */
+
           report = {
             ...report,
             time_created: timeCreated,
