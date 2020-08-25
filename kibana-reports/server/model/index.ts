@@ -15,10 +15,10 @@
 
 import { schema, TypeOf } from '@kbn/config-schema';
 
-// TODO: needs update when we integrate csv feature
-const dataReportSchema = schema.object({
+export const dataReportSchema = schema.object({
   saved_search_id: schema.string(),
-  time_range: schema.string(),
+  start: schema.string(),
+  end: schema.string(),
   report_format: schema.oneOf([schema.literal('csv'), schema.literal('xlsx')]),
 });
 
