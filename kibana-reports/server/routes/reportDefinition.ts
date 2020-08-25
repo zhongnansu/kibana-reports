@@ -92,7 +92,9 @@ export default function (router: IRouter) {
           reportDefinitionId
         );
         // @ts-ignore
-        const client = context.reporting_plugin.esClient.asScoped(request);
+        const client = context.reporting_plugin.schedulerClient.asScoped(
+          request
+        );
         // create schedule in reports-scheduler
         const res = await client.callAsInternalUser(
           'reports_scheduler.createSchedule',

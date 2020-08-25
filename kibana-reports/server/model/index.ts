@@ -13,7 +13,7 @@
  * permissions and limitations under the License.
  */
 
-import { schema } from '@kbn/config-schema';
+import { schema, TypeOf } from '@kbn/config-schema';
 
 // TODO: needs update when we integrate csv feature
 const dataReportSchema = schema.object({
@@ -117,3 +117,5 @@ export const reportSchema = schema.object({
     })
   ),
 });
+
+export type ReportSchemaType = TypeOf<typeof reportSchema>;
