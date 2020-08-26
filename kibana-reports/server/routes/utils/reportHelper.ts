@@ -21,92 +21,6 @@ import {
   IScopedClusterClient,
 } from '../../../../../src/core/server';
 
-export const generatePNG = async (
-  url: string,
-  itemName: string,
-  windowWidth: number,
-  windowHeight: number
-): Promise<{ timeCreated: string; dataUrl: string; fileName: string }> => {
-  try {
-    const browser = await puppeteer.launch({
-      headless: true,
-    });
-    const page = await browser.newPage();
-    await page.setDefaultNavigationTimeout(0);
-    await page.goto(url, { waitUntil: 'networkidle0' });
-
-    await page.setViewport({
-      width: windowWidth,
-      height: windowHeight,
-    });
-
-    // TODO: this element is for Dashboard page, need to think about addition params to select html element with source(Visualization, Dashboard)
-
-    const timeCreated = new Date().toISOString();
-    const fileName = getFileName(itemName, timeCreated) + '.' + FORMAT.png;
-
-    const buffer = await page.screenshot({
-      fullPage: true,
-    });
-
-    //TODO: Add header and footer, phase 2
-
-    await browser.close();
-    return { timeCreated, dataUrl: buffer.toString('base64'), fileName };
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const generatePDF = async (
-  url: string,
-  itemName: string,
-  windowWidth: number,
-  windowHeight: number
-): Promise<{ timeCreated: string; dataUrl: string; fileName: string }> => {
-  try {
-    const browser = await puppeteer.launch({
-      headless: true,
-    });
-    const page = await browser.newPage();
-
-    await page.setDefaultNavigationTimeout(0);
-    await page.setViewport({
-      width: windowWidth,
-      height: windowHeight,
-    });
-
-    await page.goto(url, { waitUntil: 'networkidle0' });
-
-    const timeCreated = new Date().toISOString();
-    const fileName = getFileName(itemName, timeCreated) + '.' + FORMAT.pdf;
-    // The scrollHeight value is equal to the minimum height the element would require in order to fit
-    // all the content in the viewport without using a vertical scroll-bar
-    const scrollHeight = await page.evaluate(
-      () => document.documentElement.scrollHeight
-    );
-
-    const buffer = await page.pdf({
-      margin: 'none',
-      width: windowWidth,
-      height: scrollHeight + 'px',
-      printBackground: true,
-      pageRanges: '1',
-    });
-
-    //TODO: Add header and footer, phase 2
-
-    await browser.close();
-    return { timeCreated, dataUrl: buffer.toString('base64'), fileName };
-  } catch (error) {
-    throw error;
-  }
-};
-
-function getFileName(itemName: string, timeCreated: string): string {
-  return `${itemName}_${timeCreated}_${uuidv1()}`;
-}
-
 export const createVisualReport = async (
   report: any
 ): Promise<{ timeCreated: string; dataUrl: string; fileName: string }> => {
@@ -206,3 +120,7 @@ export const createReport = async (
 
   return createReportResult;
 };
+
+function getFileName(itemName: string, timeCreated: string): string {
+  return `${itemName}_${timeCreated}_${uuidv1()}`;
+}

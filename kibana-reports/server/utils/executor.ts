@@ -15,7 +15,6 @@
 
 import { IClusterClient, Logger } from '../../../../src/core/server';
 import { createReport } from '../routes/utils/reportHelper';
-import fs from 'fs';
 import { logger } from 'elastic-apm-node';
 
 async function pollAndExecuteJob(
@@ -49,7 +48,8 @@ async function pollAndExecuteJob(
       logger.info('no available job in queue');
     }
   } catch (error) {
-    logger.error(error.message);
+    // TODO: need better error handling
+    logger.error(`${error.statusCode} ${error.message}`);
   }
 }
 
@@ -66,11 +66,6 @@ async function executeScheduledJob(defId: string, client: IClusterClient) {
   // TODO: Deliver report: pass report data and (maybe original reportDefinition as well) to notification module
 
   logger.info('new report created: ' + reportData.fileName);
-  // tmp: validate correctness
-  // const acutal_data_url = 'data:image/png;base64,' + reportData.dataUrl;
-  // var buf = Buffer.from(reportData.dataUrl, 'base64');
-  // fs.writeFileSync('./secondDemo.png', buf);
-  // logger.info('done write file');
 }
 
 export { pollAndExecuteJob };
