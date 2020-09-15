@@ -82,7 +82,8 @@ export function ReportTrigger(props) {
   } = props;
 
   const [reportTriggerType, setReportTriggerType] = useState('onDemandOption');
-  trigger_schema['trigger_type'] = 'On demand';
+  reportDefinitionRequest.trigger.trigger_type = 'On demand';
+  // trigger_schema['trigger_type'] = 'On demand';
 
   const [scheduleRequestTime, setScheduleRequestTime] = useState('nowOption');
   trigger_params['schedule_type'] = 'Now';
@@ -473,7 +474,7 @@ export function ReportTrigger(props) {
 
   // TODO: Change schema so these values are not required depending on trigger type
   trigger_schema['trigger_params'] = trigger_params;
-  reportDefinitionRequest['trigger'] = trigger_schema;
+  // reportDefinitionRequest['trigger'] = trigger_schema;
 
   const defaultEditTriggerType = (trigger_type) => {
     let index = 0;
@@ -509,7 +510,7 @@ export function ReportTrigger(props) {
           defaultConfigurationEdit(response.trigger);
         });
     }
-    reportDefinitionRequest['report_type'] = 'Download';
+    // reportDefinitionRequest['report_type'] = 'Download';
   }, []);
 
   return (

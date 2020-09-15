@@ -19,7 +19,6 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiButton,
-  EuiPage,
   EuiTitle,
   EuiPageBody,
   EuiSpacer,
@@ -39,22 +38,67 @@ export const TIMEZONE_OPTIONS = [
 ];
 
 export let defaultUrl;
+interface reportParamsType {
+  report_name: string;
+  report_source: string;
+  description: string;
+  core_params: visualReportParams | dataReportParams;
+}
+interface visualReportParams {
+  base_url: string;
+  report_format: string;
+  time_duration: string;
+}
+
+interface dataReportParams {
+  saved_search_id: number;
+  base_url: string;
+  report_format: string;
+  time_duration: string;
+}
+interface triggerType {
+  trigger_type: string;
+  trigger_params?: {};
+}
+
+export interface reportDefinitionParams {
+  report_params: reportParamsType;
+  delivery?: any;
+  trigger: triggerType;
+}
+
+export interface timeRangeParams {
+  timeFrom: any;
+  timeTo: any;
+}
 
 export function CreateReport(props) {
-  let createReportDefinitionRequest = {
-    report_name: '',
-    report_source: '',
-    report_type: '',
-    description: '',
+  let createReportDefinitionRequest: reportDefinitionParams = {
     report_params: {
-      url: ``,
-      report_format: '',
+      report_name: '',
+      report_source: '',
+      description: '',
+      core_params: {
+        base_url: '',
+        report_format: '',
+        //TODO: remove hard code
+        time_duration: '5m',
+      },
     },
-    delivery: {},
-    trigger: {},
+    //TODO: temporarily comment out "delivery" field
+    // delivery: {},
+    trigger: {
+      trigger_type: '',
+    },
   };
 
-  const createNewReportDefinition = async (metadata) => {
+  let timeRange = {
+    timeFrom: new Date(),
+    timeTo: new Date(),
+  };
+
+  const createNewReportDefinition = async (metadata, timeRange) => {
+    console.log(metadata);
     const { httpClient } = props;
     httpClient
       .post('../api/reporting/reportDefinition', {
@@ -64,22 +108,17 @@ export function CreateReport(props) {
         },
       })
       .then(async (resp) => {
-        if (
-          metadata['trigger']['trigger_params']['schedule_type'] === 'Now' ||
-          metadata['trigger']['trigger_type'] === 'On demand'
-        ) {
+        if (metadata.trigger.trigger_type === 'On demand') {
           let onDemandDownloadMetadata = {
-            report_name: metadata['report_name'],
-            report_source: metadata['report_source'],
-            report_type: metadata['report_type'],
-            description: metadata['description'],
-            report_params: {
-              url: metadata['report_params']['url'],
-              window_width: 1440,
-              window_height: 2560,
-              report_format: metadata['report_params']['report_format'],
-            },
+            query_url: `${
+              metadata.report_params.core_params.base_url
+            }?_g=(time:(from:'${timeRange.timeFrom.toISOString()}',to:'${timeRange.timeTo.toISOString()}'))`,
+            time_from: timeRange.timeFrom.valueOf(),
+            time_to: timeRange.timeTo.valueOf(),
+            report_definition: metadata,
           };
+          //TODO: for testing purpose, remove later
+          console.log(onDemandDownloadMetadata);
           generateReport(onDemandDownloadMetadata, httpClient);
         }
         window.location.assign(`opendistro_kibana_reports#/`);
@@ -113,6 +152,7 @@ export function CreateReport(props) {
           edit={false}
           reportDefinitionRequest={createReportDefinitionRequest}
           httpClientProps={props['httpClient']}
+          timeRange={timeRange}
         />
         <EuiSpacer />
         <ReportTrigger
@@ -120,10 +160,10 @@ export function CreateReport(props) {
           reportDefinitionRequest={createReportDefinitionRequest}
         />
         <EuiSpacer />
-        <ReportDelivery
+        {/* <ReportDelivery
           edit={false}
           reportDefinitionRequest={createReportDefinitionRequest}
-        />
+        /> */}
         <EuiSpacer />
         <EuiFlexGroup justifyContent="flexEnd">
           <EuiFlexItem grow={false}>
@@ -139,7 +179,10 @@ export function CreateReport(props) {
             <EuiButton
               fill={true}
               onClick={() =>
-                createNewReportDefinition(createReportDefinitionRequest)
+                createNewReportDefinition(
+                  createReportDefinitionRequest,
+                  timeRange
+                )
               }
             >
               Create
