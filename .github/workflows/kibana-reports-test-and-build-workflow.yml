@@ -31,15 +31,15 @@ jobs:
           cd kibana/plugins/kibana-reports
           yarn kbn bootstrap
 
-      - name: Test
-        run: |
-          cd kibana/plugins/kibana-reports
-          yarn test
+      # - name: Test
+      #   run: |
+      #     cd kibana/plugins/kibana-reports
+      #     yarn test
 
-      - name: Test Again
-        run: |
-          cd kibana/plugins/kibana-reports
-          yarn test
+      # - name: Test Again
+      #   run: |
+      #     cd kibana/plugins/kibana-reports
+      #     yarn test
 
       - name: Build Artifact
         run: |
