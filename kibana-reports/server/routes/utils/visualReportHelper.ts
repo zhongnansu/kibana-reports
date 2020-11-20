@@ -152,28 +152,28 @@ export const createVisualReport = async (
    * and the footer be below it
    */
   // TODO: make all html templates into files, such as reporting context menu button, and embedded html of email body
-  const page2 = browser.newPage();
-  await (await page2).setContent();
-  await page.setContent(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <style>
-          body {
-            font-family: "Inter UI", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            font-kerning: normal;
-          }
-        </style>
-      </head>
-      <body>
-        <div>
-        ${reportHeader}
-          <img src="data:image/png;base64,${screenshot.toString('base64')}">
-        ${reportFooter}
-        </div>
-      </body>
-    </html>
-    `);
+  // const page2 = browser.newPage();
+  // await (await page2).setContent();
+  // await page.setContent(`
+  //   <!DOCTYPE html>
+  //   <html>
+  //     <head>
+  //       <style>
+  //         body {
+  //           font-family: "Inter UI", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  //           font-kerning: normal;
+  //         }
+  //       </style>
+  //     </head>
+  //     <body>
+  //       <div>
+  //       ${reportHeader}
+  //         <img src="data:image/png;base64,${screenshot.toString('base64')}">
+  //       ${reportFooter}
+  //       </div>
+  //     </body>
+  //   </html>
+  //   `);
 
   // create pdf or png accordingly
   switch (reportFormat) {
