@@ -22,6 +22,7 @@ import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.BEGI
 import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.CREATED_TIME_FIELD
 import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.END_TIME_FIELD
 import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.ID_FIELD
+import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.INSTANCE_INDEX_PARAMS
 import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.IN_CONTEXT_DOWNLOAD_URL_FIELD
 import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.REPORT_DEFINITION_DETAILS_FIELD
 import com.amazon.opendistroforelasticsearch.reportsscheduler.model.RestTag.STATUS_FIELD
@@ -90,7 +91,7 @@ internal data class ReportInstance(
             var status: Status? = null
             var statusText: String? = null
             var inContextDownloadUrlPath: String? = null
-            XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser::getTokenLocation)
+            XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.currentToken(), parser)
             while (XContentParser.Token.END_OBJECT != parser.nextToken()) {
                 val fieldName = parser.currentName()
                 parser.nextToken()
@@ -132,38 +133,37 @@ internal data class ReportInstance(
 
     /**
      * create XContentBuilder from this object using [XContentFactory.jsonBuilder()]
+     * @param params XContent parameters
      * @return created XContentBuilder object
      */
-    fun toXContent(includeId: Boolean): XContentBuilder? {
-        return toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS, includeId)
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    override fun toXContent(builder: XContentBuilder?, params: ToXContent.Params?): XContentBuilder {
-        return toXContent(builder, params, false)
+    fun toXContent(params: ToXContent.Params = ToXContent.EMPTY_PARAMS): XContentBuilder? {
+        return toXContent(XContentFactory.jsonBuilder(), params)
     }
 
     /**
      * {ref toXContent}
      */
-    fun toXContent(builder: XContentBuilder?, params: ToXContent.Params?, includeId: Boolean): XContentBuilder {
+    override fun toXContent(builder: XContentBuilder?, params: ToXContent.Params?): XContentBuilder {
         builder!!
         builder.startObject()
-        if (includeId) {
+        if (params?.paramAsBoolean(ID_FIELD, false) == true) {
             builder.field(ID_FIELD, id)
         }
         builder.field(UPDATED_TIME_FIELD, updatedTime.toEpochMilli())
             .field(CREATED_TIME_FIELD, createdTime.toEpochMilli())
             .field(BEGIN_TIME_FIELD, beginTime.toEpochMilli())
             .field(END_TIME_FIELD, endTime.toEpochMilli())
-        if (access.isNotEmpty()) {
+        if (params?.paramAsBoolean(ACCESS_LIST_FIELD, true) == true && access.isNotEmpty()) {
             builder.field(ACCESS_LIST_FIELD, access)
         }
         if (reportDefinitionDetails != null) {
             builder.field(REPORT_DEFINITION_DETAILS_FIELD)
-            reportDefinitionDetails.toXContent(builder, ToXContent.EMPTY_PARAMS, true)
+            val passingParams = if (params?.param(ID_FIELD) == null) { // If called from index operation
+                INSTANCE_INDEX_PARAMS
+            } else {
+                params
+            }
+            reportDefinitionDetails.toXContent(builder, passingParams)
         }
         builder.field(STATUS_FIELD, status.name)
         if (statusText != null) {

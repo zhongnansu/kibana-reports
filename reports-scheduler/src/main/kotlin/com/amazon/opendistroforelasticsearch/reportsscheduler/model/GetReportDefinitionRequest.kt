@@ -62,7 +62,7 @@ internal class GetReportDefinitionRequest(
          */
         fun parse(parser: XContentParser, useReportDefinitionId: String? = null): GetReportDefinitionRequest {
             var reportDefinitionId: String? = useReportDefinitionId
-            XContentParserUtils.ensureExpectedToken(Token.START_OBJECT, parser.currentToken(), parser::getTokenLocation)
+            XContentParserUtils.ensureExpectedToken(Token.START_OBJECT, parser.currentToken(), parser)
             while (Token.END_OBJECT != parser.nextToken()) {
                 val fieldName = parser.currentName()
                 parser.nextToken()
@@ -89,10 +89,11 @@ internal class GetReportDefinitionRequest(
 
     /**
      * create XContentBuilder from this object using [XContentFactory.jsonBuilder()]
+     * @param params XContent parameters
      * @return created XContentBuilder object
      */
-    fun toXContent(): XContentBuilder? {
-        return toXContent(XContentFactory.jsonBuilder(), ToXContent.EMPTY_PARAMS)
+    fun toXContent(params: ToXContent.Params = ToXContent.EMPTY_PARAMS): XContentBuilder? {
+        return toXContent(XContentFactory.jsonBuilder(), params)
     }
 
     /**

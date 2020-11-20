@@ -21,6 +21,7 @@ import com.amazon.opendistroforelasticsearch.reportsscheduler.settings.PluginSet
 import com.amazon.opendistroforelasticsearch.reportsscheduler.settings.PluginSettings.FilterBy
 import org.elasticsearch.ElasticsearchStatusException
 import org.elasticsearch.rest.RestStatus
+import java.util.stream.Collectors
 
 /**
  * Class for checking/filtering user access.
@@ -38,6 +39,8 @@ internal object UserAccessManager {
      *  -> No validation
      * If filterBy == User
      *  -> User name should be present
+     * If filterBy == Roles
+     *  -> roles should be present
      * If filterBy == BackendRoles
      *  -> backend roles should be present
      */
@@ -49,6 +52,15 @@ internal object UserAccessManager {
                 user?.name
                     ?: throw ElasticsearchStatusException("Filter-by enabled with security disabled",
                         RestStatus.FORBIDDEN)
+            }
+            FilterBy.Roles -> { // backend roles must be present
+                if (user == null || user.roles.isNullOrEmpty()) {
+                    throw ElasticsearchStatusException("User doesn't have roles configured. Contact administrator.",
+                        RestStatus.FORBIDDEN)
+                } else if (user.roles.stream().filter { !PluginSettings.ignoredRoles.contains(it) }.count() == 0L) {
+                    throw ElasticsearchStatusException("No distinguishing roles configured. Contact administrator.",
+                        RestStatus.FORBIDDEN)
+                }
             }
             FilterBy.BackendRoles -> { // backend roles must be present
                 if (user?.backendRoles.isNullOrEmpty()) {
@@ -90,15 +102,19 @@ internal object UserAccessManager {
      * Get access info for search filtering
      */
     fun getSearchAccessInfo(user: User?): List<String> {
-        if (user == null) {
+        if (user == null) { // Security is disabled
             return listOf()
         }
-        if (PluginSettings.adminAccess == PluginSettings.AdminAccess.AllReports && user.roles.contains(ALL_ACCESS_ROLE)) {
+        if (canAdminViewAllItems(user)) {
             return listOf()
         }
         return when (PluginSettings.filterBy) {
             FilterBy.NoFilter -> listOf()
             FilterBy.User -> listOf("$USER_TAG${user.name}")
+            FilterBy.Roles -> user.roles.stream()
+                .filter { !PluginSettings.ignoredRoles.contains(it) }
+                .map { "$ROLE_TAG$it" }
+                .collect(Collectors.toList())
             FilterBy.BackendRoles -> user.backendRoles.map { "$BACKEND_ROLE_TAG$it" }
         }
     }
@@ -107,16 +123,35 @@ internal object UserAccessManager {
      * validate if user has access based on given access list
      */
     fun doesUserHasAccess(user: User?, access: List<String>): Boolean {
-        if (user == null) {
+        if (user == null) { // Security is disabled
             return true
         }
-        if (PluginSettings.adminAccess == PluginSettings.AdminAccess.AllReports && user.roles.contains(ALL_ACCESS_ROLE)) {
+        if (canAdminViewAllItems(user)) {
             return true
         }
         return when (PluginSettings.filterBy) {
             FilterBy.NoFilter -> true
             FilterBy.User -> access.contains("$USER_TAG${user.name}")
+            FilterBy.Roles -> user.roles.stream()
+                .filter { !PluginSettings.ignoredRoles.contains(it) }
+                .map { "$ROLE_TAG$it" }
+                .anyMatch { it in access }
             FilterBy.BackendRoles -> user.backendRoles.map { "$BACKEND_ROLE_TAG$it" }.any { it in access }
         }
+    }
+
+    fun hasAllInfoAccess(user: User?): Boolean {
+        if (user == null) { // Security is disabled
+            return true
+        }
+        return isAdminUser(user)
+    }
+
+    private fun canAdminViewAllItems(user: User): Boolean {
+        return PluginSettings.adminAccess == PluginSettings.AdminAccess.AllReports && isAdminUser(user)
+    }
+
+    private fun isAdminUser(user: User): Boolean {
+        return user.roles.contains(ALL_ACCESS_ROLE)
     }
 }

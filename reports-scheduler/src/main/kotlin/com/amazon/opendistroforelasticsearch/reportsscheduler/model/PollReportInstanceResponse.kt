@@ -52,14 +52,16 @@ import java.io.IOException
 internal class PollReportInstanceResponse : BaseResponse {
     val retryAfter: Int
     val reportInstance: ReportInstance?
+    private val filterSensitiveInfo: Boolean
 
     companion object {
         private val log by logger(GetReportDefinitionResponse::class.java)
     }
 
-    constructor(retryAfter: Int, reportInstance: ReportInstance?) : super() {
+    constructor(retryAfter: Int, reportInstance: ReportInstance? = null, filterSensitiveInfo: Boolean = true) : super() {
         this.retryAfter = retryAfter
         this.reportInstance = reportInstance
+        this.filterSensitiveInfo = filterSensitiveInfo
     }
 
     @Throws(IOException::class)
@@ -72,7 +74,7 @@ internal class PollReportInstanceResponse : BaseResponse {
     constructor(parser: XContentParser) : super() {
         var retryAfter: Int = PluginSettings.minPollingDurationSeconds
         var reportInstance: ReportInstance? = null
-        XContentParserUtils.ensureExpectedToken(Token.START_OBJECT, parser.currentToken(), parser::getTokenLocation)
+        XContentParserUtils.ensureExpectedToken(Token.START_OBJECT, parser.currentToken(), parser)
         while (Token.END_OBJECT != parser.nextToken()) {
             val fieldName = parser.currentName()
             parser.nextToken()
@@ -87,6 +89,7 @@ internal class PollReportInstanceResponse : BaseResponse {
         }
         this.retryAfter = retryAfter
         this.reportInstance = reportInstance
+        this.filterSensitiveInfo = false // Sensitive info Must have filtered when created json object
     }
 
     /**
@@ -113,9 +116,14 @@ internal class PollReportInstanceResponse : BaseResponse {
      */
     override fun toXContent(builder: XContentBuilder?, params: ToXContent.Params?): XContentBuilder {
         return if (reportInstance != null) {
+            val xContentParams = if (filterSensitiveInfo) {
+                RestTag.FILTERED_REST_OUTPUT_PARAMS
+            } else {
+                RestTag.REST_OUTPUT_PARAMS
+            }
             builder!!.startObject()
                 .field(REPORT_INSTANCE_FIELD)
-            reportInstance.toXContent(builder, ToXContent.EMPTY_PARAMS, true)
+            reportInstance.toXContent(builder, xContentParams)
             builder.endObject()
         } else {
             builder!!.startObject()
