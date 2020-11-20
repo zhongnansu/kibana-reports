@@ -26,6 +26,7 @@ import {
 import { getFileName } from './helpers';
 import { CreateReportResultType } from './types';
 import { ReportParamsSchemaType, VisualReportSchemaType } from 'server/model';
+import fs from 'fs';
 
 export const createVisualReport = async (
   reportParams: ReportParamsSchemaType,
@@ -81,37 +82,78 @@ export const createVisualReport = async (
     height: windowHeight,
   });
 
-  let buffer: Buffer;
-  let element: ElementHandle<Element>;
-  // remove top nav bar
-  await page.evaluate(
-    /* istanbul ignore next */
-    (selector) => {
-      document.querySelector(selector)?.remove();
-    },
-    SELECTOR.topNavBar
-  );
+  let buffer: Buffer | undefined;
+  let element: ElementHandle<Element> | null;
+  let selector: any;
+
   // crop content
   switch (reportSource) {
     case REPORT_TYPE.dashboard:
-      element = await page.waitForSelector(SELECTOR.dashboard);
+      await page.waitForSelector(SELECTOR.dashboard, { visible: true });
+      element = await page.$(SELECTOR.dashboard);
+      selector = SELECTOR.dashboard;
       break;
+
     case REPORT_TYPE.visualization:
-      element = await page.waitForSelector(SELECTOR.visualization);
+      await page.waitForSelector(SELECTOR.visualization, { visible: true });
+      element = await page.$(SELECTOR.visualization);
+      selector = SELECTOR.visualization;
       break;
+
     default:
       throw Error(
-        `report source can only be one of [Dashboard, Visualization]`
+        `report source for visual report can only be one of [Dashboard, Visualization]`
       );
   }
 
-  const screenshot = await element.screenshot({ fullPage: false });
+  console.log(reportHeader);
+
+  // remove top nav bar
+  await page.evaluate(
+    /* istanbul ignore next */
+    (header, footer, selector) => {
+      document.querySelector('.headerGlobalNav')?.remove();
+      document.querySelector('.globalQueryBar')?.remove();
+      document.querySelector('.visEditor__content')?.remove();
+      document.querySelector(
+        '.coreSystemRootDomElement.euiBody--headerIsFixed'
+      ).style.paddingTop = '0px';
+
+      const htmlToElement = (html: string) => {
+        let template = document.createElement('template');
+        template.setAttribute('font-size', '800px');
+        template.innerHTML = html;
+        return template.content.childNodes;
+      };
+
+      const nodeList = htmlToElement(header);
+      if (nodeList) {
+        let size = nodeList.length;
+        for (let i = size; i >= 0; i--) {
+          document.querySelector(selector)?.prepend(nodeList[i]);
+        }
+      }
+      // document
+      //   .getElementById('dashboardViewport')
+      //   ?.insertAdjacentHTML('afterbegin', header);
+    },
+    reportHeader,
+    reportFooter,
+    selector
+  );
+
+  const html = await page.content();
+  fs.writeFileSync('test.html', html);
+
+  // const screenshot = await element.screenshot({ fullPage: false });
 
   /**
    * Sets the content of the page to have the header be above the trimmed screenshot
    * and the footer be below it
    */
   // TODO: make all html templates into files, such as reporting context menu button, and embedded html of email body
+  const page2 = browser.newPage();
+  await (await page2).setContent();
   await page.setContent(`
     <!DOCTYPE html>
     <html>
@@ -134,31 +176,32 @@ export const createVisualReport = async (
     `);
 
   // create pdf or png accordingly
-  // switch (reportFormat) {
-  //   case value:
+  switch (reportFormat) {
+    case FORMAT.pdf:
+      const scrollHeight = await page.evaluate(
+        /* istanbul ignore next */
+        () => document.documentElement.scrollHeight
+      );
 
-  //     break;
+      buffer = await page.pdf({
+        margin: undefined,
+        width: windowWidth,
+        height: scrollHeight + 'px',
+        printBackground: true,
+        pageRanges: '1',
+      });
+      break;
 
-  //   default:
-  //     break;
-  // }
-  if (reportFormat === FORMAT.pdf) {
-    const scrollHeight = await page.evaluate(
-      /* istanbul ignore next */
-      () => document.documentElement.scrollHeight
-    );
+    case FORMAT.png:
+      buffer = await page.screenshot({
+        fullPage: true,
+      });
+      break;
 
-    buffer = await page.pdf({
-      margin: undefined,
-      width: windowWidth,
-      height: scrollHeight + 'px',
-      printBackground: true,
-      pageRanges: '1',
-    });
-  } else if (reportFormat === FORMAT.png) {
-    buffer = await page.screenshot({
-      fullPage: true,
-    });
+    default:
+      throw Error(
+        'report format for visual report can only be one of [pdf, png]'
+      );
   }
 
   const curTime = new Date();
