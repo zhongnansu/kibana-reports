@@ -19,19 +19,45 @@ import {
   reportGenerationInProgressModal,
   reportGenerationSuccess,
   reportGenerationFailure,
-  permissionsMissingOnGeneration
+  permissionsMissingOnGeneration,
 } from './context_menu_ui';
 
 const getReportSourceURL = (baseURI) => {
-  let url = baseURI.substr(0, baseURI.indexOf('?'));
+  const url = baseURI.substr(0, baseURI.indexOf('?'));
   const reportSourceId = url.substr(url.lastIndexOf('/') + 1, url.length);
   return reportSourceId;
+};
+
+export const contextMenuViewReports = () =>
+  window.location.assign('opendistro_kibana_reports#/');
+
+export const getTimeFieldsFromUrl = () => {
+  const url = window.location.href;
+
+  let [, fromDateString, toDateString] = url.match(
+    /time:\(from:(.+),to:(.+?)\)/
+  );
+  fromDateString = fromDateString.replace(/[']+/g, '');
+  // convert time range to from date format in case time range is relative
+  const fromDateFormat = dateMath.parse(fromDateString);
+  toDateString = toDateString.replace(/[']+/g, '');
+  const toDateFormat = dateMath.parse(toDateString);
+
+  const timeDuration = moment.duration(
+    dateMath.parse(toDateString).diff(dateMath.parse(fromDateString))
+  );
+
+  return {
+    time_from: fromDateFormat,
+    time_to: toDateFormat,
+    time_duration: timeDuration.toISOString(),
+  };
 };
 
 export const contextMenuCreateReportDefinition = (baseURI) => {
   const reportSourceId = getReportSourceURL(baseURI);
   let reportSource = '';
-  let timeRanges = getTimeFieldsFromUrl();
+  const timeRanges = getTimeFieldsFromUrl();
 
   // check report source
   if (baseURI.includes('dashboard')) {
@@ -45,49 +71,6 @@ export const contextMenuCreateReportDefinition = (baseURI) => {
   window.location.assign(
     `opendistro_kibana_reports#/create?previous=${reportSource}?timeFrom=${timeRanges.time_from.toISOString()}?timeTo=${timeRanges.time_to.toISOString()}`
   );
-};
-
-export const contextMenuViewReports = () =>
-  window.location.assign('opendistro_kibana_reports#/');
-
-export const getTimeFieldsFromUrl = () => {
-  let url = window.location.href;
-  let timeString = url.substring(
-    url.lastIndexOf('time:'),
-    url.lastIndexOf('))')
-  );
-  if (url.includes('visualize') || url.includes('discover')) {
-    timeString = url.substring(url.lastIndexOf('time:'), url.indexOf('))'));
-  }
-
-  let fromDateString = timeString.substring(
-    timeString.lastIndexOf('from:') + 5,
-    timeString.lastIndexOf(',')
-  );
-
-  // remove extra quotes if the 'from' date is absolute time
-  fromDateString = fromDateString.replace(/[']+/g, '');
-
-  // convert time range to from date format in case time range is relative
-  let fromDateFormat = dateMath.parse(fromDateString);
-
-  let toDateString = timeString.substring(
-    timeString.lastIndexOf('to:') + 3,
-    timeString.length
-  );
-
-  toDateString = toDateString.replace(/[']+/g, '');
-  let toDateFormat = dateMath.parse(toDateString);
-
-  const timeDuration = moment.duration(
-    dateMath.parse(toDateString).diff(dateMath.parse(fromDateString))
-  );
-
-  return {
-    time_from: fromDateFormat,
-    time_to: toDateFormat,
-    time_duration: timeDuration.toISOString(),
-  };
 };
 
 export const displayLoadingModal = () => {
@@ -121,7 +104,9 @@ export const addSuccessOrFailureToast = (status) => {
       } else if (status === 'permissionsFailure') {
         generateInProgressToast.innerHTML = permissionsMissingOnGeneration();
         setTimeout(function () {
-          document.getElementById('permissionsMissingErrorToast').style.display = 'none';
+          document.getElementById(
+            'permissionsMissingErrorToast'
+          ).style.display = 'none';
         }, 6000);
       }
       generateToast[0].appendChild(generateInProgressToast.children[0]);
