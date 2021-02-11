@@ -48,7 +48,7 @@ jobs:
         with:
           timeout_minutes: 30
           max_attempts: 3
-          command: cd kibana/plugins/${{ env.PLUGIN_NAME }}; yarn test --coverage
+          command: cd kibana/plugins/${{ env.PLUGIN_NAME }}; yarn test --coverage --detectOpenHandles
 
       - name: Upload coverage
         uses: codecov/codecov-action@v1
